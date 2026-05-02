@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cofit 外食餐盤圖卡生成器</title>
+    <title>Cofit 智能外食餐盤圖卡生成器</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- html2canvas for exporting images -->
@@ -44,44 +44,85 @@
         ::-webkit-scrollbar-track { background: #f1f1f1; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid white;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="text-gray-800">
+<body class="text-gray-800 pb-20">
 
     <!-- Toast Notification Container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2"></div>
 
     <div class="max-w-6xl mx-auto p-6">
         <!-- Header -->
-        <header class="mb-8 text-center">
-            <h1 class="text-4xl font-black text-emerald-900 mb-2">Cofit 外食餐盤圖卡生成器</h1>
-            <p class="text-emerald-700">自動讀取 14 天菜單，生成可編輯且包含 AI 生成餐點圖片的衛教圖卡</p>
+        <header class="mb-8 text-center mt-4">
+            <h1 class="text-4xl font-black text-emerald-900 mb-2">Cofit 智能外食餐盤系統</h1>
+            <p class="text-emerald-700">自動規劃 14 天外食菜單，並一鍵生成精美衛教圖卡</p>
         </header>
 
-        <!-- Input Section -->
-        <section class="bg-white rounded-2xl shadow-sm border border-emerald-100 p-6 mb-8">
-            <h2 class="text-xl font-bold text-emerald-800 mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-file-spreadsheet"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8"/><path d="M8 17h8"/><path d="M8 9h2"/></svg>
-                輸入菜單資料 (CSV)
-            </h2>
+        <!-- Step 1: AI Menu Generator -->
+        <section class="bg-white rounded-2xl shadow-sm border border-emerald-200 p-6 mb-6">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-emerald-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg">1</div>
+                <h2 class="text-xl font-bold text-emerald-800">AI 自動生成 14 天菜單</h2>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">餐盤名稱 (顯示於圖卡)</label>
+                    <input type="text" id="input-plate-name" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700" placeholder="例如：減脂專屬外食餐盤" value="減脂外食餐盤">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">餐盤比例</label>
+                    <input type="text" id="input-ratio" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700" placeholder="例如：蔬菜2:蛋白質1:澱粉1" value="2:1:1 比例">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-2">用戶居住地點 (確保外食可買到)</label>
+                    <input type="text" id="input-location" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700" placeholder="例如：台北市信義區" value="台北市">
+                </div>
+            </div>
+
+            <div class="bg-emerald-50 p-4 rounded-xl text-sm text-emerald-800 mb-6 flex gap-3 items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="flex-shrink-0 mt-0.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                <p>AI 將嚴格遵守：無水果、無乳製品、使用手掌/拳頭份量估算、並確保是該地點真實可見的外食菜色。</p>
+            </div>
+
+            <div class="flex justify-end">
+                <button id="ai-generate-btn" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-8 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+                    <span>生成 14 天專屬菜單</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- Step 2: Input & Generate Cards -->
+        <section class="bg-white rounded-2xl shadow-sm border border-emerald-100 p-6 mb-10">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-emerald-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-lg">2</div>
+                <h2 class="text-xl font-bold text-emerald-800">確認菜單資料並產生圖卡</h2>
+            </div>
             
             <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">貼上 CSV 文字</label>
-                <textarea id="csv-input" rows="8" class="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 font-mono text-sm" placeholder="Day,早餐蛋白質,早餐全穀雜糧,早餐蔬菜,午餐蛋白質,午餐全穀雜糧,午餐蔬菜,晚餐蛋白質,晚餐全穀雜糧,晚餐蔬菜,每日重點&#10;Day 1,水煮蛋,地瓜,生菜沙拉,烤雞腿,糙米飯,燙青菜,清蒸魚,五穀飯,炒高麗菜,多喝水，保持充足睡眠！"></textarea>
+                <label class="block text-sm font-medium text-gray-700 mb-2">CSV 菜單資料 (可由上方 AI 自動填入，或手動貼上/修改)</label>
+                <textarea id="csv-input" rows="8" class="w-full border border-gray-300 rounded-lg p-4 focus:ring-2 focus:ring-emerald-700 focus:border-emerald-700 font-mono text-sm leading-relaxed bg-gray-50" placeholder="點擊上方「生成 14 天專屬菜單」後，資料會自動填入這裡。您也可以直接貼上現有的 CSV 資料。"></textarea>
             </div>
             
             <div class="flex items-center gap-4">
                 <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">或上傳 CSV 檔案</label>
                     <input type="file" id="csv-file" accept=".csv" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-800 hover:file:bg-emerald-100 transition-colors">
                 </div>
-                <div class="flex-1 flex justify-end items-end h-full pt-6">
-                    <button id="generate-btn" class="bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-transform active:scale-95 flex items-center gap-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-                        生成圖卡
-                    </button>
-                    <button id="load-sample-btn" class="ml-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors">
-                        載入範例
+                <div class="flex-1 flex justify-end items-end h-full">
+                    <button id="generate-cards-btn" class="bg-emerald-900 hover:bg-black text-white font-bold py-3 px-8 rounded-lg shadow-md transition-transform active:scale-95 flex items-center gap-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                        繪製所有圖卡
                     </button>
                 </div>
             </div>
@@ -90,9 +131,10 @@
         <!-- Cards Container -->
         <section id="cards-container" class="space-y-12 flex flex-col items-center">
             <!-- Cards will be generated here -->
-            <div id="empty-state" class="text-center py-12 text-gray-400">
+            <div id="empty-state" class="text-center py-16 text-gray-400 border-2 border-dashed border-gray-200 rounded-3xl w-full">
                 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mx-auto mb-4 opacity-50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                <p class="text-lg">輸入資料後將自動生成健康餐盤圖卡</p>
+                <p class="text-xl font-bold text-gray-500 mb-2">尚未產生任何圖卡</p>
+                <p class="text-sm">請先完成上方步驟 1 與 2，系統將為您繪製精美餐盤圖</p>
             </div>
         </section>
     </div>
@@ -106,8 +148,7 @@
 
         // --- 2. Utility Functions ---
         
-        // Custom Toast Notification (replaces alert)
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', duration = 5000) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             
@@ -116,29 +157,29 @@
             if (type === 'success') bgClass = 'bg-emerald-700';
             if (type === 'warning') bgClass = 'bg-yellow-500';
 
-            toast.className = `${bgClass} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0`;
+            toast.className = `${bgClass} text-white px-6 py-4 rounded-xl shadow-xl flex items-center gap-3 transform transition-all duration-300 translate-x-full opacity-0 max-w-md`;
             toast.innerHTML = `
-                <span class="font-medium">${message}</span>
+                <span class="font-medium flex-1">${message}</span>
                 <button class="ml-auto text-white/80 hover:text-white" onclick="this.parentElement.remove()">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             `;
             
             container.appendChild(toast);
             
-            // Animate in
             requestAnimationFrame(() => {
                 toast.classList.remove('translate-x-full', 'opacity-0');
             });
 
-            // Auto remove
-            setTimeout(() => {
-                toast.classList.add('translate-x-full', 'opacity-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 5000);
+            if(duration > 0) {
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full', 'opacity-0');
+                    setTimeout(() => toast.remove(), 300);
+                }, duration);
+            }
+            return toast; // return element so it can be manually removed if needed
         }
 
-        // Exponential backoff fetch wrapper
         async function fetchWithRetry(url, options, maxRetries = 5) {
             let retries = 0;
             let delay = 1000;
@@ -147,12 +188,9 @@
                     const response = await fetch(url, options);
                     if (response.ok) return await response.json();
                     
-                    // If rate limited or server error, throw to trigger retry
                     if (response.status === 429 || response.status >= 500) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    
-                    // For other errors (like 400 Bad Request), return to handle gracefully
                     return await response.json(); 
                 } catch (error) {
                     retries++;
@@ -166,7 +204,6 @@
             }
         }
 
-        // CSV Parser
         function parseCSV(csvText) {
             const lines = csvText.split('\n').filter(line => line.trim() !== '');
             if (lines.length < 2) return [];
@@ -175,7 +212,8 @@
             const data = [];
             
             for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map(v => v.trim());
+                // Split by comma, but handle potential quotes (basic implementation)
+                const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
                 if (values.length >= 10) {
                     data.push({
                         day: values[0],
@@ -189,15 +227,102 @@
             return data;
         }
 
-        // --- 3. Core Logic ---
+        // --- 3. AI Generation Logic ---
 
-        // Image Generation Logic (Gemini API / Imagen)
+        async function generateMenuFromAI() {
+            if (!apiKey) {
+                showToast("缺少 API Key，無法進行 AI 產生。請在系統環境中提供有效金鑰。", "error");
+                return;
+            }
+
+            const plateName = document.getElementById('input-plate-name').value.trim() || '專屬外食餐盤';
+            const ratio = document.getElementById('input-ratio').value.trim() || '依個人比例';
+            const location = document.getElementById('input-location').value.trim() || '當地';
+            const btn = document.getElementById('ai-generate-btn');
+            const icon = btn.querySelector('svg');
+            const span = btn.querySelector('span');
+
+            // Loading state
+            btn.disabled = true;
+            btn.classList.add('opacity-80', 'cursor-not-allowed');
+            icon.style.display = 'none';
+            const spinner = document.createElement('div');
+            spinner.className = 'spinner';
+            btn.insertBefore(spinner, span);
+            span.innerText = "營養師 AI 規劃中... (約需 10-15 秒)";
+            
+            const loadingToast = showToast("正在根據您的條件規劃 14 天無水果、無乳製品外食菜單，請稍候...", "info", 0);
+
+            const systemPrompt = `你是一位專業的 Cofit 營養師，負責設計外食菜單。請嚴格遵守用戶條件，並直接輸出純 CSV 格式，不帶任何 Markdown 標記 (不要用 \`\`\`csv 包住，直接輸出文字即可)。
+必須嚴格包含這個標題列：
+Day,早餐蛋白質,早餐全穀雜糧,早餐蔬菜,午餐蛋白質,午餐全穀雜糧,午餐蔬菜,晚餐蛋白質,晚餐全穀雜糧,晚餐蔬菜,每日重點`;
+
+            const promptText = `請為我生成 14 天的三餐外食菜單：
+- 餐盤名稱：${plateName}
+- 餐盤比例：${ratio}
+- 用戶居住地點：${location}
+
+嚴格遵守以下原則：
+1. 產出 14 天內容，每天包含早餐、午餐、晚餐。
+2. 絕對不能含有任何水果（包含但不限於小蕃茄、蘋果橘子等）和乳製品（起司、優格、乳酪、奶酪、牛奶、拿鐵等）。
+3. 菜色必須是真實在「${location}」常見、可買得到、可執行的真實外食選擇（如便利商店、自助餐、麵店、便當店等）。
+4. 文字使用繁體中文。
+5. 保留份量單位，例如：1手掌、1/2碗、3/4碗、2拳、2又1/2拳、1片。請以手掌、拳頭開始來做份量的推估和設計。
+6. 菜單要有變化，避免連續多天重複同一主菜。
+7. 每日三餐內容應符合用戶提供的餐盤比例與營養邏輯。
+8. 優先選擇看起來乾淨、容易辨識、適合商業攝影呈現的餐點名稱。
+9. 每一天要附上一句「每日重點」，讓學員知道這天的搭配亮點或提醒。
+10. 不要輸出任何解釋文字，只要 CSV 資料本身。`;
+
+            try {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: systemPrompt }] }
+                };
+
+                const result = await fetchWithRetry(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                let generatedText = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (generatedText) {
+                    // Clean up markdown if AI still adds it
+                    generatedText = generatedText.replace(/```csv\n/g, '').replace(/```\n?/g, '').trim();
+                    
+                    document.getElementById('csv-input').value = generatedText;
+                    loadingToast.remove();
+                    showToast("🎉 14 天菜單規劃完成！請檢閱下方資料，並點擊「繪製所有圖卡」。", "success");
+                    
+                    // Highlight textarea temporarily
+                    const textarea = document.getElementById('csv-input');
+                    textarea.classList.add('bg-emerald-50', 'ring-2', 'ring-emerald-500');
+                    setTimeout(() => textarea.classList.remove('bg-emerald-50', 'ring-2', 'ring-emerald-500'), 2000);
+                } else {
+                    throw new Error("API 回傳格式異常");
+                }
+            } catch (error) {
+                console.error("Menu generation failed:", error);
+                loadingToast.remove();
+                showToast("生成菜單失敗，請稍後再試或檢查網路連線。", "error");
+            } finally {
+                // Restore button state
+                btn.disabled = false;
+                btn.classList.remove('opacity-80', 'cursor-not-allowed');
+                icon.style.display = 'block';
+                spinner.remove();
+                span.innerText = "生成 14 天專屬菜單";
+            }
+        }
+
         async function generateMealImage(protein, grain, veg) {
             const promptText = `蛋白質: ${protein}, 全穀雜糧: ${grain}, 蔬菜: ${veg}`;
-            const enhancedPrompt = `A high-quality, commercial food photography shot of Hong Kong authentic style healthy takeout food or bento box. Clean, natural light, top-down or slight angle view. Meal components visible: ${promptText}. No text, no letters, no logos, no watermarks, no labels, no decorations. Clean white or neutral bright background. Professional nutrition presentation.`;
+            const enhancedPrompt = `A high-quality, commercial food photography shot of authentic style healthy takeout food or bento box based on Asian cuisine. Clean, natural light, top-down or slight angle view. Meal components visible: ${promptText}. NO fruits, NO dairy products. No text, no letters, no logos, no watermarks, no labels, no decorations. Clean white or neutral bright background. Professional nutrition presentation.`;
 
             if (!apiKey) {
-                console.warn("API Key is missing. Returning placeholder.");
                 return generatePlaceholderImage(promptText);
             }
 
@@ -217,16 +342,13 @@
                 if (result.predictions && result.predictions[0] && result.predictions[0].bytesBase64Encoded) {
                     return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
                 } else {
-                    console.error("Image generation failed or returned unexpected structure", result);
                     return generatePlaceholderImage("生成失敗，點擊重新生成", true);
                 }
             } catch (e) {
-                console.error("Error generating image:", e);
                 return generatePlaceholderImage("發生錯誤，點擊重新生成", true);
             }
         }
 
-        // Fallback/Placeholder generator using Canvas
         function generatePlaceholderImage(text, isError = false) {
             const canvas = document.createElement('canvas');
             canvas.width = 400; canvas.height = 400;
@@ -240,7 +362,6 @@
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             
-            // Wrap text slightly
             const words = text.split(', ');
             let y = 200 - ((words.length - 1) * 15);
             words.forEach(word => {
@@ -252,13 +373,12 @@
         }
 
         // Build a single card HTML
-        function createCardElement(data, index) {
+        function createCardElement(data, index, plateName, ratio) {
             const cardId = `card-${index}`;
             const card = document.createElement('div');
             card.id = cardId;
             card.className = 'w-full max-w-[1000px] bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-emerald-50 overflow-hidden relative';
             
-            // Format Day string (e.g., convert "1" to "Day 1")
             let displayDay = data.day.trim();
             if (/^\d+$/.test(displayDay)) {
                 displayDay = `Day ${displayDay}`;
@@ -266,7 +386,6 @@
                 displayDay = displayDay.replace(/^day\s*/i, 'Day ');
             }
 
-            // Define meal blocks configuration
             const meals = [
                 { type: 'breakfast', label: '早餐', data: data.breakfast, color: 'emerald' },
                 { type: 'lunch', label: '午餐', data: data.lunch, color: 'teal' },
@@ -274,15 +393,15 @@
             ];
 
             let mealsHTML = meals.map(meal => {
-                const textDesc = `蛋白質：${meal.data.prot}<br>全穀雜糧：${meal.data.grain}<br>蔬菜：${meal.data.veg}`;
+                const textDesc = `<span class="font-bold text-${meal.color}-800">蛋白質：</span>${meal.data.prot}<br><span class="font-bold text-${meal.color}-800">全穀雜糧：</span>${meal.data.grain}<br><span class="font-bold text-${meal.color}-800">蔬菜：</span>${meal.data.veg}`;
                 const imgId = `${cardId}-${meal.type}-img`;
                 const btnId = `${cardId}-${meal.type}-regen`;
                 
                 return `
                     <div class="flex flex-col gap-4">
                         <div class="flex items-center justify-between border-b-2 border-${meal.color}-200 pb-2">
-                            <h3 class="text-xl font-bold text-${meal.color}-800" contenteditable="true">${meal.label}</h3>
-                            <span class="text-xs font-semibold bg-${meal.color}-100 text-${meal.color}-700 px-2 py-1 rounded-full" contenteditable="true">2:1:1 比例</span>
+                            <h3 class="text-xl font-bold text-${meal.color}-900" contenteditable="true">${meal.label}</h3>
+                            <span class="text-xs font-semibold bg-${meal.color}-100 text-${meal.color}-800 px-2 py-1 rounded-full" contenteditable="true">${ratio}</span>
                         </div>
                         
                         <!-- Image Area -->
@@ -290,22 +409,22 @@
                             <div id="${imgId}-skeleton" class="absolute inset-0 image-loading-skeleton"></div>
                             <img id="${imgId}" src="" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-500" alt="${meal.label} Image">
                             
-                            <!-- Regenerate Button (hidden on export) -->
+                            <!-- Regenerate Button -->
                             <button id="${btnId}" class="no-export absolute bottom-3 right-3 bg-white/90 hover:bg-white text-gray-700 hover:text-${meal.color}-600 shadow-md p-2.5 rounded-full backdrop-blur-sm transition-all transform hover:scale-110 opacity-0 group-hover:opacity-100 focus:opacity-100 disabled:opacity-50 disabled:cursor-not-allowed" title="重新生成圖片">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                             </button>
                         </div>
 
                         <!-- Text Area -->
-                        <div class="bg-${meal.color}-50/50 p-4 rounded-xl border border-${meal.color}-100 h-full">
-                            <div class="text-gray-700 leading-relaxed min-h-[5rem]" contenteditable="true">${textDesc}</div>
+                        <div class="bg-${meal.color}-50/60 p-4 rounded-xl border border-${meal.color}-100 h-full">
+                            <div class="text-gray-800 leading-relaxed min-h-[5rem]" contenteditable="true">${textDesc}</div>
                         </div>
                     </div>
                 `;
             }).join('');
 
             card.innerHTML = `
-                <!-- Export Menu (no-export) -->
+                <!-- Export Menu -->
                 <div class="no-export absolute top-6 right-6 flex gap-2 z-10">
                     <button onclick="exportImage('${cardId}', 'png')" class="bg-white hover:bg-gray-50 text-gray-600 border border-gray-200 shadow-sm px-4 py-2 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
@@ -320,8 +439,8 @@
                 <div class="p-10 pt-12">
                     <!-- Card Header -->
                     <div class="text-center mb-10">
-                        <div class="inline-block bg-emerald-800 text-white px-4 py-1.5 rounded-full text-sm font-bold mb-3 tracking-wider" contenteditable="true">COFIT 專家營養團隊</div>
-                        <h2 class="text-4xl font-black text-gray-800 mb-2" contenteditable="true">${displayDay} 專屬外食餐盤</h2>
+                        <div class="inline-block bg-emerald-900 text-white px-4 py-1.5 rounded-full text-sm font-bold mb-3 tracking-wider" contenteditable="true">COFIT 專家營養團隊</div>
+                        <h2 class="text-4xl font-black text-gray-900 mb-2" contenteditable="true">${displayDay} ${plateName}</h2>
                         <p class="text-gray-500 font-medium" contenteditable="true">依照您的健康目標，精心設計的黃金比例</p>
                     </div>
 
@@ -331,13 +450,13 @@
                     </div>
 
                     <!-- Daily Focus Footer -->
-                    <div class="bg-gray-50 border border-gray-100 rounded-2xl p-6 mt-8 flex gap-4 items-start">
+                    <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6 mt-8 flex gap-4 items-start">
                         <div class="bg-emerald-100 text-emerald-800 p-3 rounded-full flex-shrink-0">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
                         </div>
                         <div class="flex-1">
-                            <h4 class="text-lg font-bold text-gray-800 mb-1" contenteditable="true">每日重點提醒</h4>
-                            <p class="text-gray-600" contenteditable="true">${data.dailyFocus}</p>
+                            <h4 class="text-lg font-bold text-gray-900 mb-1" contenteditable="true">每日重點提醒</h4>
+                            <p class="text-gray-700 font-medium leading-relaxed" contenteditable="true">${data.dailyFocus}</p>
                         </div>
                     </div>
                 </div>
@@ -346,20 +465,17 @@
             return { element: card, meals: meals, cardId: cardId };
         }
 
-        // Trigger individual image generation
         async function triggerImageGeneration(imgId, skeletonId, btnId, mealData) {
             const imgEl = document.getElementById(imgId);
             const skelEl = document.getElementById(skeletonId);
             const btnEl = document.getElementById(btnId);
 
-            // Set loading state
             imgEl.style.opacity = '0';
             skelEl.style.display = 'block';
             if(btnEl) btnEl.disabled = true;
 
             const base64Img = await generateMealImage(mealData.prot, mealData.grain, mealData.veg);
             
-            // Render result
             if (base64Img) {
                 imgEl.src = base64Img;
                 imgEl.onload = () => {
@@ -367,7 +483,7 @@
                     skelEl.style.display = 'none';
                 };
             } else {
-                skelEl.style.display = 'none'; // Fallback handled inside generateMealImage ideally
+                skelEl.style.display = 'none';
             }
 
             if(btnEl) btnEl.disabled = false;
@@ -375,30 +491,30 @@
 
         // --- 4. Main Actions ---
 
-        // Render Cards Flow
         async function generateCards() {
             const csvText = document.getElementById('csv-input').value;
             const parsedData = parseCSV(csvText);
 
             if (parsedData.length === 0) {
-                showToast('無法解析 CSV 資料，請檢查格式是否正確。', 'error');
+                showToast('無法解析 CSV 資料，請檢查格式或確認是否為空。', 'error');
                 return;
             }
 
-            // Clear container
+            // Get current inputs for Title and Ratio overrides
+            const plateName = document.getElementById('input-plate-name').value.trim() || '專屬外食餐盤';
+            const ratio = document.getElementById('input-ratio').value.trim() || '依個人比例';
+
             cardsContainer.innerHTML = '';
             emptyState.style.display = 'none';
             cardDataList = parsedData;
 
-            showToast(`成功讀取 ${parsedData.length} 天菜單，開始生成圖卡與圖片...`, 'success');
+            showToast(`成功讀取 ${parsedData.length} 天菜單，開始產生圖卡與 AI 餐點圖片...`, 'success');
 
-            // Construct DOM elements sequentially
             for (let i = 0; i < parsedData.length; i++) {
                 const data = parsedData[i];
-                const cardObj = createCardElement(data, i);
+                const cardObj = createCardElement(data, i, plateName, ratio);
                 cardsContainer.appendChild(cardObj.element);
 
-                // Attach Event Listeners to Regenerate buttons and kick off initial generation
                 cardObj.meals.forEach(meal => {
                     const imgId = `${cardObj.cardId}-${meal.type}-img`;
                     const skelId = `${cardObj.cardId}-${meal.type}-img-skeleton`;
@@ -412,36 +528,29 @@
                         });
                     }
 
-                    // Kick off initial load (asynchronously, without blocking loop)
                     triggerImageGeneration(imgId, skelId, btnId, meal.data);
                 });
             }
         }
 
-        // Export Function (PNG/JPG) using html2canvas
         window.exportImage = function(cardId, format) {
             const card = document.getElementById(cardId);
-            
-            // Hide elements that shouldn't be exported
             const noExportElements = card.querySelectorAll('.no-export');
-            noExportElements.forEach(el => el.style.opacity = '0'); // Use opacity instead of display to maintain layout strictly
+            noExportElements.forEach(el => el.style.opacity = '0'); 
 
             showToast(`正在匯出圖卡為 ${format.toUpperCase()}...`, 'info');
 
-            // Slightly increase scale for better quality text
             html2canvas(card, { 
                 scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff'
             }).then(canvas => {
                 const imgData = canvas.toDataURL(`image/${format === 'jpg' ? 'jpeg' : 'png'}`, 0.9);
-                
                 const link = document.createElement('a');
-                link.download = `Cofit_MealPlate_${cardId}.${format}`;
+                link.download = `Cofit_${cardId}.${format}`;
                 link.href = imgData;
                 link.click();
                 
-                // Restore elements
                 noExportElements.forEach(el => el.style.opacity = '1');
                 showToast(`匯出成功！`, 'success');
             }).catch(err => {
@@ -453,7 +562,6 @@
 
         // --- 5. Event Listeners ---
 
-        // File upload handler
         document.getElementById('csv-file').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -465,18 +573,8 @@
             reader.readAsText(file);
         });
 
-        // Generate button
-        document.getElementById('generate-btn').addEventListener('click', generateCards);
-
-        // Load sample button
-        document.getElementById('load-sample-btn').addEventListener('click', () => {
-            const sampleCSV = `Day,早餐蛋白質,早餐全穀雜糧,早餐蔬菜,午餐蛋白質,午餐全穀雜糧,午餐蔬菜,晚餐蛋白質,晚餐全穀雜糧,晚餐蔬菜,每日重點
-Day 1,水煮蛋1顆,蒸地瓜半條,生菜沙拉1碗,烤去骨雞腿排,糙米飯半碗,燙青江菜1碗,清蒸鱸魚片,五穀飯半碗,炒高麗菜1碗,請盡量選擇原型食物，避免過度調味及油炸。多喝水，保持充足睡眠！
-Day 2,無糖豆漿1杯,全麥吐司1片,大番茄1顆,滷牛腱肉片,藜麥飯半碗,炒菠菜1碗,蒜香煎豆腐,燕麥飯半碗,涼拌小黃瓜1碗,今天蔬菜量可再增加，注意蛋白質攝取是否足夠。
-Day 3,煎雞胸肉片,燕麥片3湯匙,燙秋葵半碗,鮭魚排1片,紫米飯半碗,炒花椰菜1碗,豬里肌肉片,糙米飯半碗,炒木耳菇類1碗,可以多攝取不同顏色的蔬菜，補充多元維生素與植化素。`;
-            document.getElementById('csv-input').value = sampleCSV;
-            showToast('已載入 3 天份範例資料，點擊「生成圖卡」查看效果。', 'success');
-        });
+        document.getElementById('ai-generate-btn').addEventListener('click', generateMenuFromAI);
+        document.getElementById('generate-cards-btn').addEventListener('click', generateCards);
 
     </script>
 </body>
